@@ -1,0 +1,84 @@
+import numpy as np
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def sigmoid_derivative(x):
+    return x * (1 - x)
+
+print("--- Forward Propagation ---")
+
+X_fp = np.array([0.5, 0.8])
+
+w_h = np.array([[0.1, 0.4],
+                [0.2, 0.5]])
+b_h = np.array([0.3, 0.6])
+w_o = np.array([[0.7],
+                [0.9]])
+b_o = np.array([0.1])
+
+z_h1 = X_fp[0]*w_h[0,0] + X_fp[1]*w_h[1,0] + b_h[0]
+z_h2 = X_fp[0]*w_h[0,1] + X_fp[1]*w_h[1,1] + b_h[1]
+z_h = np.array([z_h1, z_h2])
+
+a_h = sigmoid(z_h)
+
+z_o1 = a_h[0]*w_o[0,0] + a_h[1]*w_o[1,0] + b_o[0]
+z_o = np.array([z_o1])
+
+y_pred_manual = sigmoid(z_o)
+
+print(f"Manual Forward Propagation Output: {y_pred_manual[0]:.4f}")
+
+def forward_propagate(X, w_h, b_h, w_o, b_o):
+    z_h = np.dot(X, w_h) + b_h
+    a_h = sigmoid(z_h)
+
+    z_o = np.dot(a_h, w_o) + b_o
+    y_pred = sigmoid(z_o)
+    return y_pred, a_h, z_h
+
+y_pred_code, a_h_code, z_h_code = forward_propagate(X_fp, w_h, b_h, w_o, b_o)
+print(f"Code Verified Forward Propagation Output: {y_pred_code[0]:.4f}")
+
+print("\n--- Backpropagation (One Iteration) ---")
+X_bp = np.array([[0.5, 0.8]])
+y_true = np.array([[0.7]])
+
+w_h_bp = np.array([[0.1, 0.4],
+                   [0.2, 0.5]])
+b_h_bp = np.array([[0.3, 0.6]])
+w_o_bp = np.array([[0.7],
+                   [0.9]])
+b_o_bp = np.array([[0.1]])
+
+learning_rate = 0.1
+
+print("Initial Weights (Hidden Layer):\n", w_h_bp)
+print("Initial Biases (Hidden Layer):\n", b_h_bp)
+print("Initial Weights (Output Layer):\n", w_o_bp)
+print("Initial Biases (Output Layer):\n", b_o_bp)
+
+y_pred_bp, a_h_bp, z_h_bp = forward_propagate(X_bp, w_h_bp, b_h_bp, w_o_bp, b_o_bp)
+
+error = y_true - y_pred_bp
+
+delta_o = error * sigmoid_derivative(y_pred_bp)
+
+error_hidden = delta_o @ w_o_bp.T
+delta_h = error_hidden * sigmoid_derivative(a_h_bp)
+
+dW_o = a_h_bp.T @ delta_o
+db_o = delta_o
+w_o_bp_updated = w_o_bp + learning_rate * dW_o
+b_o_bp_updated = b_o_bp + learning_rate * db_o
+
+dW_h = X_bp.T @ delta_h
+db_h = delta_h
+w_h_bp_updated = w_h_bp + learning_rate * dW_h
+b_h_bp_updated = b_h_bp + learning_rate * db_h
+
+print("\nUpdated Weights (Hidden Layer) after one iteration:\n", w_h_bp_updated)
+print("Updated Biases (Hidden Layer) after one iteration:\n", b_h_bp_updated)
+print("Updated Weights (Output Layer) after one iteration:\n", w_o_bp_updated)
+print("Updated Biases (Output Layer) after one iteration:\n", b_o_bp_updated)
