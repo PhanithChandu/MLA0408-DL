@@ -1,0 +1,79 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import pdist, squareform
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+print("--- Analyzing Distance Between Points with Increasing Dimensions ---")
+
+# Function to generate random points and calculate average pairwise distance
+def analyze_distances(dimensions, num_points=100):
+    # Generate points in a unit hypercube [0, 1]^D
+    points = np.random.rand(num_points, dimensions)
+    # Calculate all pairwise Euclidean distances
+    distances = pdist(points, 'euclidean')
+    return np.mean(distances), np.std(distances)
+
+dimensions_to_test = [2, 10, 50, 100, 200, 500, 1000]
+avg_distances = []
+std_distances = []
+
+for d in dimensions_to_test:
+    avg_dist, std_dist = analyze_distances(d)
+    avg_distances.append(avg_dist)
+    std_distances.append(std_dist)
+    print(f"Dimensions: {d}, Average Pairwise Distance: {avg_dist:.4f}, Std Dev: {std_dist:.4f}")
+
+plt.figure(figsize=(10, 6))
+plt.plot(dimensions_to_test, avg_distances, marker='o', linestyle='-', label='Average Distance')
+plt.plot(dimensions_to_test, std_distances, marker='x', linestyle='--', label='Standard Deviation of Distances')
+plt.xlabel('Number of Dimensions')
+plt.ylabel('Distance')
+plt.title('Average Pairwise Distance vs. Dimensions in a Unit Hypercube')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+print("\nAnalysis of Distance:\n- As the number of dimensions increases, the average distance between randomly sampled points in a fixed-size space (like a unit hypercube) also tends to increase.")
+print("- More importantly, the standard deviation of these distances tends to decrease relative to the mean, meaning all points become 'far apart' from each other and the data becomes sparse.")
+print("- This phenomenon implies that in high dimensions, distances become less meaningful as a differentiator between points, making concepts like 'nearest neighbors' less robust.")
+
+print("\n--- Analyzing Model Accuracy with Increasing Dimensions ---")
+
+# Function to generate synthetic classification data and train a classifier
+def analyze_model_accuracy(dimensions, num_samples=200, informative_features=2, random_state=42):
+    X, y = make_classification(n_samples=num_samples, n_features=dimensions,
+                               n_informative=informative_features, n_redundant=0, n_repeated=0,
+                               n_clusters_per_class=1, random_state=random_state)
+
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=random_state)
+
+    # Train a K-Nearest Neighbors classifier
+    knn = KNeighborsClassifier(n_neighbors=5)
+    knn.fit(X_train, y_train)
+    y_pred = knn.predict(X_test)
+    return accuracy_score(y_test, y_pred)
+
+dimensions_for_accuracy = [2, 5, 10, 20, 50, 100, 200, 300, 400, 500]
+accuracies = []
+
+for d in dimensions_for_accuracy:
+    # Keep number of informative features low to simulate 'curse'
+    accuracy = analyze_model_accuracy(d, informative_features=2)
+    accuracies.append(accuracy)
+    print(f"Dimensions: {d}, KNN Accuracy: {accuracy:.4f}")
+
+plt.figure(figsize=(10, 6))
+plt.plot(dimensions_for_accuracy, accuracies, marker='o', linestyle='-')
+plt.xlabel('Number of Dimensions')
+plt.ylabel('Accuracy')
+plt.title('KNN Accuracy vs. Dimensions (Fixed Informative Features)')
+plt.grid(True)
+plt.show()
+
+print("\nAnalysis of Model Accuracy:\n- With a fixed number of truly informative features, as the total number of dimensions (features) increases, the accuracy of the model (especially distance-based models like KNN) tends to decrease.")
+print("- This is because the additional non-informative dimensions add noise and make it harder for the model to find the true underlying patterns.")
+print("- In high-dimensional spaces, the data becomes extremely sparse, and the 'local' neighborhood of a point (which KNN relies on) becomes less well-defined. This leads to increased computational cost and often degraded performance.")
+print("- Dimensionality reduction techniques are often used to mitigate the effects of the curse of dimensionality by projecting high-dimensional data into a lower-dimensional space while preserving essential information.")
