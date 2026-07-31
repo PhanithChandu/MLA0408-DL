@@ -1,84 +1,110 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+print("--- Gradient Descent and Learning Rate Analysis ---")
 
-def sigmoid_derivative(x):
-    return x * (1 - x)
+def cost_function(x):
+    return x**2
 
-print("--- Forward Propagation ---")
+def gradient(x):
+    return 2 * x
 
-X_fp = np.array([0.5, 0.8])
+def gradient_descent_optimizer(initial_x, learning_rate, n_iterations):
+    x = initial_x
+    path = [x]
+    for _ in range(n_iterations):
+        grad = gradient(x)
+        x = x - learning_rate * grad
+        path.append(x)
+    return np.array(path)
 
-w_h = np.array([[0.1, 0.4],
-                [0.2, 0.5]])
-b_h = np.array([0.3, 0.6])
-w_o = np.array([[0.7],
-                [0.9]])
-b_o = np.array([0.1])
+initial_x = 10
+n_iterations_gd = 50
 
-z_h1 = X_fp[0]*w_h[0,0] + X_fp[1]*w_h[1,0] + b_h[0]
-z_h2 = X_fp[0]*w_h[0,1] + X_fp[1]*w_h[1,1] + b_h[1]
-z_h = np.array([z_h1, z_h2])
+lr_fast = 0.6
+lr_medium = 0.1
+lr_slow = 0.01
 
-a_h = sigmoid(z_h)
+path_fast = gradient_descent_optimizer(initial_x, lr_fast, n_iterations_gd)
+path_medium = gradient_descent_optimizer(initial_x, lr_medium, n_iterations_gd)
+path_slow = gradient_descent_optimizer(initial_x, lr_slow, n_iterations_gd)
 
-z_o1 = a_h[0]*w_o[0,0] + a_h[1]*w_o[1,0] + b_o[0]
-z_o = np.array([z_o1])
+plt.figure(figsize=(10, 6))
+x_range = np.linspace(-10, 10, 400)
+plt.plot(x_range, cost_function(x_range), label='Cost Function: $f(x) = x^2$')
+plt.plot(path_fast, cost_function(path_fast), 'o--', label=f'LR = {lr_fast} (Overshoot/Divergence)')
+plt.plot(path_medium, cost_function(path_medium), 'o--', label=f'LR = {lr_medium} (Good Convergence)')
+plt.plot(path_slow, cost_function(path_slow), 'o--', label=f'LR = {lr_slow} (Slow Convergence)')
+plt.xlabel('x')
+plt.ylabel('f(x)')
+plt.title('Effect of Learning Rate on Gradient Descent Convergence')
+plt.legend()
+plt.grid(True)
+plt.xlim([-10, 10])
+plt.ylim([-5, 105])
+plt.show()
 
-y_pred_manual = sigmoid(z_o)
+print("Analysis of Learning Rate:\n- A large learning rate (0.6) can cause the algorithm to overshoot the minimum or even diverge.")
+print("- A medium learning rate (0.1) allows for stable and relatively fast convergence.")
+print("- A small learning rate (0.01) leads to slow convergence, requiring many iterations to reach the minimum.")
 
-print(f"Manual Forward Propagation Output: {y_pred_manual[0]:.4f}")
+print("\n--- Stochastic Gradient Descent (SGD) vs. Batch Gradient Descent ---")
 
-def forward_propagate(X, w_h, b_h, w_o, b_o):
-    z_h = np.dot(X, w_h) + b_h
-    a_h = sigmoid(z_h)
+np.random.seed(42)
+X_reg = 2 * np.random.rand(100, 1)
+y_reg = 4 + 3 * X_reg + np.random.randn(100, 1)
+X_b_reg = np.c_[np.ones((100, 1)), X_reg]
 
-    z_o = np.dot(a_h, w_o) + b_o
-    y_pred = sigmoid(z_o)
-    return y_pred, a_h, z_h
+def mse_cost(X, y, theta):
+    return np.mean((X @ theta - y)**2)
 
-y_pred_code, a_h_code, z_h_code = forward_propagate(X_fp, w_h, b_h, w_o, b_o)
-print(f"Code Verified Forward Propagation Output: {y_pred_code[0]:.4f}")
+def mse_gradient(X, y, theta):
+    return 2/len(y) * X.T @ (X @ theta - y)
 
-print("\n--- Backpropagation (One Iteration) ---")
-X_bp = np.array([[0.5, 0.8]])
-y_true = np.array([[0.7]])
+def batch_gradient_descent(X, y, learning_rate, n_iterations):
+    theta = np.random.randn(X.shape[1], 1)
+    losses = []
+    for _ in range(n_iterations):
+        grad = mse_gradient(X, y, theta)
+        theta = theta - learning_rate * grad
+        losses.append(mse_cost(X, y, theta))
+    return theta, losses
 
-w_h_bp = np.array([[0.1, 0.4],
-                   [0.2, 0.5]])
-b_h_bp = np.array([[0.3, 0.6]])
-w_o_bp = np.array([[0.7],
-                   [0.9]])
-b_o_bp = np.array([[0.1]])
+def sgd(X, y, learning_rate, n_epochs):
+    m = len(y)
+    theta = np.random.randn(X.shape[1], 1)
+    losses = []
+    for epoch in range(n_epochs):
+        shuffled_indices = np.random.permutation(m)
+        X_shuffled = X[shuffled_indices]
+        y_shuffled = y[shuffled_indices]
 
-learning_rate = 0.1
+        for i in range(m):
+            xi = X_shuffled[i:i+1]
+            yi = y_shuffled[i:i+1]
+            grad = 2 * xi.T @ (xi @ theta - yi)
+            theta = theta - learning_rate * grad
+            losses.append(mse_cost(X, y, theta))
+    return theta, losses
 
-print("Initial Weights (Hidden Layer):\n", w_h_bp)
-print("Initial Biases (Hidden Layer):\n", b_h_bp)
-print("Initial Weights (Output Layer):\n", w_o_bp)
-print("Initial Biases (Output Layer):\n", b_o_bp)
+lr_bgd = 0.1
+n_iterations_bgd = 50
+theta_bgd, losses_bgd = batch_gradient_descent(X_b_reg, y_reg, lr_bgd, n_iterations_bgd)
 
-y_pred_bp, a_h_bp, z_h_bp = forward_propagate(X_bp, w_h_bp, b_h_bp, w_o_bp, b_o_bp)
+lr_sgd = 0.01
+n_epochs_sgd = 50
+theta_sgd, losses_sgd = sgd(X_b_reg, y_reg, lr_sgd, n_epochs_sgd)
 
-error = y_true - y_pred_bp
+plt.figure(figsize=(12, 6))
+plt.plot(losses_bgd, label='Batch Gradient Descent')
+plt.plot(np.arange(0, len(losses_sgd), len(X_reg)), losses_sgd[::len(X_reg)], 'o-', alpha=0.7, label='SGD (Loss per Epoch)')
+plt.xlabel('Iterations (Batch GD) / Epochs (SGD)')
+plt.ylabel('Loss (Mean Squared Error)')
+plt.title('Convergence Comparison: Batch GD vs. SGD')
+plt.legend()
+plt.grid(True)
+plt.ylim(0, max(max(losses_bgd), max(losses_sgd[::len(X_reg)])) + 1)
+plt.show()
 
-delta_o = error * sigmoid_derivative(y_pred_bp)
-
-error_hidden = delta_o @ w_o_bp.T
-delta_h = error_hidden * sigmoid_derivative(a_h_bp)
-
-dW_o = a_h_bp.T @ delta_o
-db_o = delta_o
-w_o_bp_updated = w_o_bp + learning_rate * dW_o
-b_o_bp_updated = b_o_bp + learning_rate * db_o
-
-dW_h = X_bp.T @ delta_h
-db_h = delta_h
-w_h_bp_updated = w_h_bp + learning_rate * dW_h
-b_h_bp_updated = b_h_bp + learning_rate * db_h
-
-print("\nUpdated Weights (Hidden Layer) after one iteration:\n", w_h_bp_updated)
-print("Updated Biases (Hidden Layer) after one iteration:\n", b_h_bp_updated)
-print("Updated Weights (Output Layer) after one iteration:\n", w_o_bp_updated)
-print("Updated Biases (Output Layer) after one iteration:\n", b_o_bp_updated)
+print("\nAnalysis of Convergence:\n- Batch Gradient Descent has a smoother convergence path because it calculates the gradient using the entire dataset at each step.")
+print("- Stochastic Gradient Descent has a noisier convergence path due to updating weights based on a single training example at a time. However, it can reach the vicinity of the minimum much faster, especially for large datasets, and can escape local minima more easily.")
