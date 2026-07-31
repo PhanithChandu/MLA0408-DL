@@ -1,0 +1,18 @@
+import numpy as np
+
+np.random.seed(42)
+actual_mean = 5
+actual_std = 2
+synthetic_data = np.random.normal(loc=actual_mean, scale=actual_std, size=1000)
+
+estimated_mean = np.mean(synthetic_data)
+
+estimated_variance = np.var(synthetic_data)
+estimated_std = np.sqrt(estimated_variance)
+
+print(f"Actual Mean: {actual_mean:.4f}")
+print(f"Estimated Mean: {estimated_mean:.4f}")
+print(f"Actual Standard Deviation: {actual_std:.4f}")
+print(f"Estimated Standard Deviation: {estimated_std:.4f}")
+print(f"Actual Variance: {actual_std**2:.4f}")
+print(f"Estimated Variance: {estimated_variance:.4f}")
