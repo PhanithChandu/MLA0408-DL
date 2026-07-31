@@ -1,0 +1,63 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import make_classification, make_moons
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import Perceptron
+from sklearn.neural_network import MLPClassifier
+
+def plot_perceptron_decision_boundary(X, y, model, title):
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02),
+                         np.arange(y_min, y_max, 0.02))
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.contourf(xx, yy, Z, alpha=0.8)
+    plt.scatter(X[:, 0], X[:, 1], c=y, edgecolors='k', marker='o')
+    plt.title(title)
+    plt.show()
+
+print("--- Perceptron on Linearly Separable Data ---")
+
+X_linear, y_linear = make_classification(n_samples=100, n_features=2, n_redundant=0, n_informative=2,
+                                         n_clusters_per_class=1, random_state=4)
+perceptron_linear = Perceptron(random_state=42, max_iter=1000)
+perceptron_linear.fit(X_linear, y_linear)
+y_pred_linear = perceptron_linear.predict(X_linear)
+print(f"Accuracy on linearly separable data: {accuracy_score(y_linear, y_pred_linear):.4f}")
+plot_perceptron_decision_boundary(X_linear, y_linear, perceptron_linear, "Perceptron on Linearly Separable Data")
+
+print("\n--- Perceptron on Non-Linearly Separable Data ---")
+
+X_nonlinear, y_nonlinear = make_moons(n_samples=100, noise=0.15, random_state=42)
+perceptron_nonlinear = Perceptron(random_state=42, max_iter=1000)
+perceptron_nonlinear.fit(X_nonlinear, y_nonlinear)
+y_pred_nonlinear = perceptron_nonlinear.predict(X_nonlinear)
+print(f"Accuracy on non-linearly separable data: {accuracy_score(y_nonlinear, y_pred_nonlinear):.4f}")
+plot_perceptron_decision_boundary(X_nonlinear, y_nonlinear, perceptron_nonlinear, "Perceptron on Non-Linearly Separable Data")
+
+print("\n--- Multilayer Perceptron (MLP) ---")
+X_train_mlp, X_test_mlp, y_train_mlp, y_test_mlp = train_test_split(X_nonlinear, y_nonlinear, test_size=0.3, random_state=42)
+
+mlp_model = MLPClassifier(hidden_layer_sizes=(10, 5), max_iter=1000, random_state=42, activation='relu', solver='adam')
+mlp_model.fit(X_train_mlp, y_train_mlp)
+
+y_pred_mlp = mlp_model.predict(X_test_mlp)
+print(f"MLP Accuracy on test data: {accuracy_score(y_test_mlp, y_pred_mlp):.4f}")
+
+def plot_mlp_decision_boundary(X, y, model, title):
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.02),
+                         np.arange(y_min, y_max, 0.02))
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    plt.contourf(xx, yy, Z, alpha=0.8)
+    plt.scatter(X[:, 0], X[:, 1], c=y, edgecolors='k', marker='o')
+    plt.title(title)
+    plt.show()
+
+plot_mlp_decision_boundary(X_nonlinear, y_nonlinear, mlp_model, "MLP Decision Boundary on Non-Linearly Separable Data")
+
+print("\nAnalysis: The Perceptron struggles with non-linearly separable data, as its decision boundary is always linear. The MLP, with its hidden layers and non-linear activation functions, is able to learn complex, non-linear decision boundaries and achieves much higher accuracy on such datasets.")
